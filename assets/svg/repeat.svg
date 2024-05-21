@@ -1,0 +1,6 @@
+<svg width="20" height="20">
+  <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" id="repeat">
+    <path d="M0 0h48v48H0z" fill="#000"></path>
+    <path d="M14 14h20v6l8-8-8-8v6H10v12h4v-8zm20 20H14v-6l-8 8 8 8v-6h24V26h-4v8z"></path>
+  </symbol>
+</svg>
