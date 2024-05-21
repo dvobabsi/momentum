@@ -194,7 +194,7 @@ getQuotes();
 changeQuote.addEventListener('click', getQuotes);
 
 
-//--------------------------Audio-------------------
+//---------------Audio-------------------
 
 const AudioController = {
   state: {
@@ -406,6 +406,7 @@ const AudioController = {
   setCurrentItem(itemId) {
     const current = this.state.audios.find(({ id }) => +id === +itemId);
 
+    console.log(current);
     if (!current) return;
 
     this.pauseCurrentAudio();
