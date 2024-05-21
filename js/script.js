@@ -1,4 +1,7 @@
-//------------------------------------Variables------------------------------------
+import { data } from "./data.js";
+import { shuffle, toMinAndSec } from "./utils.js";
+
+//-Variables-
 const timeElement = document.querySelector('.time');
 const dateElement = document.querySelector('.date');
 const greetingElement = document.querySelector('.greeting');
@@ -16,15 +19,7 @@ const weatherError = document.querySelector('.weather-error');
 const changeQuote = document.querySelector('.change-quote');
 const quote = document.querySelector('.quote');
 const author = document.querySelector('.author');
-const playPrevBtn = document.querySelector('.play-prev');
-const play = document.querySelector('.play');
-const playNextBtn = document.querySelector('.play-next');
-const playListContainer = document.querySelector('.play-list');
-const playListContainerArr = document.querySelectorAll('.play-list');
-const lineTime = document.querySelector('.line-time');
-const playTime = document.querySelector('.play-time');
-const playTimeAll = document.querySelector('.play-time-all');
-const nameTrack = document.querySelector('.name-track');
+
 const langs = document.querySelectorAll('.lang_button');
 
 
@@ -32,7 +27,7 @@ const greatingRu = ['Доброй ночи,', 'Доброе утро,','Добр
 const timeOfDayEng = ['night','morning','afternoon','evening']
 
 
-//------------------------------------Time and Date------------------------------------
+//-------------Time and Date-------------------------
 
 function showTime() {
     const date = new Date();
@@ -40,9 +35,8 @@ function showTime() {
     timeElement.textContent = currentTime;
     showDate();
     showGreeting();
-    // setInterval(showTime, 1000);
 };
-// showTime();
+
 setInterval(showTime, 1000);
 
 function showDate() {
@@ -201,249 +195,288 @@ changeQuote.addEventListener('click', getQuotes);
 
 
 //--------------------------Audio-------------------
-const playList = [
-    {
-        author: 'AnnenMayKantereit',
-        title: 'Ganz egal',
-        src: 'https://raw.githubusercontent.com/dvobabsi/stage0-tasks/assets/sounds/AnnenMayKantereit/Ganz egal.mp3',
-        duration: '02:10'
-    },
-    {
-        author: 'AnnenMayKantereit',
-        title: 'Gegenwartsbewältigung',
-        src: 'https://raw.githubusercontent.com/dvobabsi/stage0-tasks/assets/sounds/AnnenMayKantereit/Gegenwartsbewältigung.mp3',
-        duration: '01:44'
-    },
-    {
-        author: 'AnnenMayKantereit',
-        title: 'Podojdi',
-        src: 'https://raw.githubusercontent.com/dvobabsi/stage0-tasks/assets/sounds/AnnenMayKantereit/Podojdi.mp3',
-        duration: '02:46'
-    },
-    {
-        author: 'AnnenMayKantereit',
-        title: 'So laut so leer',
-        src: 'https://raw.githubusercontent.com/dvobabsi/stage0-tasks/assets/sounds/AnnenMayKantereit/So laut so leer.mp3',
-        duration: '02:44'
-    },
-    {
-        author: 'AnnenMayKantereit',
-        title: 'So wies war',
-        src: 'https://raw.githubusercontent.com/dvobabsi/stage0-tasks/assets/sounds/AnnenMayKantereit/So wies war.mp3',
-        duration: '00:47'
-    },
-    {
-        author: 'AnnenMayKantereit',
-        title: 'Vergangenheit',
-        src: 'https://raw.githubusercontent.com/dvobabsi/stage0-tasks/assets/sounds/AnnenMayKantereit/Vergangenheit.mp3',
-        duration: '01:56'
-    }
-];
 
+const AudioController = {
+  state: {
+    audios: [],
+    current: {},
+    repeating: false,
+    playing: false,
+    volume: 0.5,
+  },
 
-const audio = new Audio();
-let isPlay = false;
-let playNum = 0;
-const playListArr = playListContainer.children;
-let playTrack = playListArr[0];
-let currentTimeAudio = 0;
+  init() {
+    this.initVariables();
+    this.initEvents();
+    this.renderAudios();
+  },
 
+  initVariables() {
+    this.playButton = null;
+    this.audioList = document.querySelector(".items");
+    this.currentItem = document.querySelector(".current");
+    this.repeatButton = document.querySelector(".handling-repeat");
+    this.volumeButton = document.querySelector(".controls-volume");
+    this.shuffleButton = document.querySelector(".handling-shuffle");
+  },
 
-function playAudio() {
-    audio.src = playList[playNum].src;
-    audio.currentTime = currentTimeAudio;
-    isPlay = true;
-    audio.play();
-    // console.log(audio.currentTime);
-};
+  initEvents() {
+    this.audioList.addEventListener("click", this.handleItem.bind(this));
+    this.repeatButton.addEventListener("click", this.handleRepeat.bind(this));
+    this.volumeButton.addEventListener("change", this.handleVolume.bind(this));
+    this.shuffleButton.addEventListener("click", this.handleShuffle.bind(this));
+  },
 
-function pauseAudio() {
-    isPlay = false;
-    audio.pause();
-    currentTimeAudio = audio.currentTime;
-    // console.log(audio.currentTime);
-};
+  handleShuffle() {
+    const { children } = this.audioList;
+    const shuffled = shuffle([...children]);
 
-play.addEventListener('click', toggleBtn);
-function toggleBtn() {
-    if(play.classList.contains('pause') === false) {
-        playAudio();
-        play.classList.toggle('pause');
-    } else {
-        pauseAudio();
-        play.classList.toggle('pause');
-    }
-}
-audio.addEventListener('ended', playNext);
+    this.audioList.innerHTML = "";
+    shuffled.forEach((item) => this.audioList.appendChild(item));
+  },
 
+  handleVolume({ target: { value } }) {
+    const { current } = this.state;
 
+    this.state.volume = value;
 
-playList.forEach(el => {
-    const li = document.createElement('li');
-    playListContainer.append(li);
-    li.classList.add('play-item');
-    li.textContent = `${el.title} | ${el.duration}`;
-});
-// console.log(playListArr);
-playListArr[playNum].classList.add('item-active');
+    if (!current?.audio) return;
 
-// playListContainer.addEventListener("click", function(e) {
-//     let target = e.target;
-//     if (target.className == "play-item") {
-//         alert('+++ ');
-//         console.log(playListContainer.indexOf(target));
-//     }
-//   });
+    current.audio.volume = value;
+  },
 
-const listItems = document.querySelectorAll('.play-item');
+  handleRepeat({ currentTarget }) {
+    const { repeating } = this.state;
 
-listItems.forEach((item, index) => {
-    item.addEventListener('click', () => {
-        const itemIndex = Array.from(listItems).indexOf(item);
-        console.log(itemIndex);
-        playNum = itemIndex;
-        playAudio();
-        removeClassActive();
-        item.classList.add('item-active');
-        if(play.classList.contains('pause') === false) {
-            toggleBtn();
-        }
+    currentTarget.classList.toggle("active", !repeating);
+    this.state.repeating = !repeating;
+  },
+
+  handleAudioPlay() {
+    const { playing, current } = this.state;
+    const { audio } = current;
+
+    !playing ? audio.play() : audio.pause();
+
+    this.state.playing = !playing;
+
+    this.playButton.classList.toggle("playing", !playing);
+  },
+
+  handleNext() {
+    const { current } = this.state;
+
+    const currentItem = document.querySelector(`[data-id="${current.id}"]`);
+    const next = currentItem.nextSibling?.dataset;
+    const first = this.audioList.firstChild?.dataset;
+
+    const itemId = next?.id || first?.id;
+
+    if (!itemId) return;
+
+    this.setCurrentItem(itemId);
+  },
+
+  handlePrev() {
+    const { current } = this.state;
+
+    const currentItem = document.querySelector(`[data-id="${current.id}"]`);
+    const prev = currentItem.previousSibling?.dataset;
+    const last = this.audioList.lastChild?.dataset;
+
+    const itemId = prev?.id || last?.id;
+
+    if (!itemId) return;
+
+    this.setCurrentItem(itemId);
+  },
+
+  handlePlayer() {
+    const play = document.querySelector(".controls-play");
+    const next = document.querySelector(".controls-next");
+    const prev = document.querySelector(".controls-prev");
+
+    this.playButton = play;
+
+    play.addEventListener("click", this.handleAudioPlay.bind(this));
+    next.addEventListener("click", this.handleNext.bind(this));
+    prev.addEventListener("click", this.handlePrev.bind(this));
+  },
+
+  audioUpdateHandler({ audio, duration }) {
+    const progress = document.querySelector(".progress-current");
+    const timeline = document.querySelector(".timeline-start");
+
+    audio.addEventListener("timeupdate", ({ target }) => {
+      const { currentTime } = target;
+      const width = (currentTime * 100) / duration;
+
+      timeline.innerHTML = toMinAndSec(currentTime);
+      progress.style.width = `${width}%`;
     });
-});
 
-// playListArr.forEach(el => {
-//     el.addEventListener('click', function () {
-//         playNum = playListArr.childElementCount;
-//         playAudio();
-//     })
-// });
+    audio.addEventListener("ended", ({ target }) => {
+      target.currentTime = 0;
+      progress.style.width = `0%`;
 
-function removeClassActive() {
-    for(let i = 0; i < playListArr.length; i = i + 1) {
-        if (playListArr[i] !== playListArr[playNum]) {
-            playListArr[i].classList.remove('item-active');
-        };
-    };
-}
+      this.state.repeating ? target.play() : this.handleNext();
+    });
+  },
 
+  renderCurrentItem({ id, link, track, year, group, duration }) {
+    const [image] = link.split(".");
 
-// const playItem = document.querySelectorAll('play-item');
+    return `<div
+            class="current-image"
+            style="background-image: url(./assets/images/${id}.jpg)"
+          ></div>
 
-function playNext() {
-    if (playNum < playListArr.length - 1) {
-        playNum = playNum + 1;
-        playAudio();
-        play.classList.add('pause');
-        playListArr[playNum].classList.add('item-active');
-        removeClassActive();
-        currentTimeAudio = 0;
-        return console.log(playNum);
-    } else {
-        playNum = 0;
-        playAudio();
-        playListArr[playNum].classList.add('item-active');
-        removeClassActive();
-        currentTimeAudio = 0;
-        return console.log(playNum);
-    };
+          <div class="current-info">
+            <div class="current-info__top">
+              <div class="current-info__titles">
+                <h2 class="current-info__group">${group}</h2>
+                <h3 class="current-info__track">${track}</h3>
+              </div>
+
+              <div class="current-info__year">${year}</div>
+            </div>
+
+            <div class="controls">
+              <div class="controls-buttons">
+                <button class="controls-button controls-prev">
+                  <svg version="1.1" class="icon-arrow" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+                    <title>backward</title>
+                    <path fill="#fff" d="M32 64c17.673 0 32-14.327 32-32s-14.327-32-32-32-32 14.327-32 32 14.327 32 32 32zM32 6c14.359 0 26 11.641 26 26s-11.641 26-26 26-26-11.641-26-26 11.641-26 26-26zM44 42l-14-10 14-10zM28 42l-14-10 14-10z"></path>
+                  </svg>
+                </button>
+
+                <button class="controls-button controls-play">
+                  <svg class="icon-pause" version="1.1" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+                    <title>pause</title>
+                    <path fill="#fff" d="M32 0c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32zM32 58c-14.359 0-26-11.641-26-26s11.641-26 26-26 26 11.641 26 26-11.641 26-26 26zM20 20h8v24h-8zM36 20h8v24h-8z"></path>
+                  </svg>
+                  <svg class="icon-play" version="1.1" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+                    <title>play2</title>
+                    <path fill="#fff" d="M32 0c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32-14.327-32-32-32zM32 58c-14.359 0-26-11.641-26-26s11.641-26 26-26 26 11.641 26 26-11.641 26-26 26zM24 18l24 14-24 14z"></path>
+                  </svg>
+                </button>
+
+                <button class="controls-button controls-next">
+                <svg version="1.1" class="icon-arrow" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+                    <title>backward</title>
+                    <path fill="#fff" d="M32 64c17.673 0 32-14.327 32-32s-14.327-32-32-32-32 14.327-32 32 14.327 32 32 32zM32 6c14.359 0 26 11.641 26 26s-11.641 26-26 26-26-11.641-26-26 11.641-26 26-26zM44 42l-14-10 14-10zM28 42l-14-10 14-10z"></path>
+                </svg>
+                </button>
+              </div>
+
+              <div class="controls-progress">
+                <div class="progress">
+                  <div class="progress-current"></div>
+                </div>
+
+                <div class="timeline">
+                  <span class="timeline-start">00:00</span>
+                  <span class="timeline-end">${toMinAndSec(duration)}</span>
+                </div>
+              </div>
+            </div>
+          </div>`;
+  },
+
+  pauseCurrentAudio() {
+    const {
+      current: { audio },
+    } = this.state;
+
+    if (!audio) return;
+
+    audio.pause();
+    audio.currentTime = 0;
+  },
+
+  togglePlaying() {
+    const { playing, current } = this.state;
+    const { audio } = current;
+
+    playing ? audio.play() : audio.pause();
+
+    this.playButton.classList.toggle("playing", playing);
+  },
+
+  setCurrentItem(itemId) {
+    const current = this.state.audios.find(({ id }) => +id === +itemId);
+
+    if (!current) return;
+
+    this.pauseCurrentAudio();
+
+    this.state.current = current;
+    this.currentItem.innerHTML = this.renderCurrentItem(current);
+
+    current.audio.volume = this.state.volume;
+
+    this.handlePlayer();
+    this.audioUpdateHandler(current);
+
+    setTimeout(() => {
+      this.togglePlaying();
+    }, 5);
+  },
+
+  handleItem({ target }) {
+    const { id } = target.dataset;
+
+    if (!id) return;
+
+    this.setCurrentItem(id);
+  },
+
+  renderItem({ id, link, track, genre, group, duration }) {
+    const [image] = link.split(".");
+
+    return `<div class="item" data-id="${id}">
+            <div
+              class="item-image"
+              style="background-image: url(./assets/images/${id}.jpg)"
+            ></div>
+
+            <div class="item-titles">
+              <h2 class="item-group">${group}</h2>
+              <h3 class="item-track">${track}</h3>
+            </div>
+
+            <p class="item-duration">${toMinAndSec(duration)}</p>
+            <p class="item-genre">${genre}</p>
+
+            <button class="item-play">
+              <svg class="icon-play">
+                <use xlink:href="./assets/images/sprite.svg#play"></use>
+              </svg>
+            </button>
+          </div>`;
+  },
+
+  loadAudioData(audio) {
+    this.audioList.innerHTML += this.renderItem(audio);
+  },
+
+  renderAudios() {
+    data.forEach((item) => {
+      const audio = new Audio(item.link);
+
+      audio.addEventListener("loadeddata", () => {
+        const newItem = { ...item, duration: audio.duration, audio };
+
+        this.state.audios.push(newItem);
+        this.loadAudioData(newItem);
+      });
+    });
+  },
 };
-function playPrev() {
-    if (playNum > 0) {
-        playNum = playNum - 1;
-        playAudio();
-        play.classList.add('pause');
-        playListArr[playNum].classList.add('item-active');
-        removeClassActive();
-        currentTimeAudio = 0;
-        return console.log(playNum);
-    } else {
-        playNum = playListArr.length - 1;
-        playAudio();
-        playListArr[playNum].classList.add('item-active');
-        removeClassActive();
-        currentTimeAudio = 0;
-        return console.log(playNum);
-    };
-};
 
-playPrevBtn.addEventListener('click', playPrev);
-playNextBtn.addEventListener('click', playNext);
+AudioController.init();
 
 
-//--------------------------Audio-+++-------------------
-
-// let time = audio.currentTime;
-
-// audio.addEventListener('timeupdate', (event) => {
-//     playTime.textContent = `${time}`;
-//     console.log(time);
-// });
-
-//mute
-const muteElement = document.querySelector('.mute');
-const muteActiveElement = document.querySelector('.mute-active');
-let isMute = false;
-let volumeRate = 1.0;
-
-muteElement.addEventListener('click', mute);
-function mute() {
-    muteElement.classList.toggle('mute-active');
-    if(muteElement.classList.contains('mute-active') == true) {
-        audio.muted = true;
-    } else {
-        audio.muted = false;
-    };
-};
-
-//volume
-const volumeInput = document.getElementById('volume');
-volumeInput.value = '100';
-
-volumeInput.addEventListener('click', getVolume)
-function getVolume() {
-    audio.volume = volumeInput.value / 100;
-}
-
-//progress
-lineTime.value = '0';
-playTime.textContent = '0:00';
-playTimeAll.textContent = playList[playNum].duration;
-
-
-function minSecTime(num) {
-    let seconds = parseInt(num);
-    let minutes = parseInt(seconds / 60);
-    seconds -= minutes * 60;
-    const hours = parseInt(minutes / 60);
-    minutes -= hours * 60;
-
-    if (hours === 0) return `${minutes}:${String(seconds % 60).padStart(2, 0)}`;
-    return `${String(hours).padStart(2, 0)}:${minutes}:${String(seconds % 60).padStart(2, 0)}`;
-}
-
-lineTime.addEventListener('change', function () {
-    audio.currentTime = lineTime.value;
-    // playTimeAll.textContent = playList[playNum].duration;
-});
-
-
-
-setTimeout(function tick() {
-    lineTime.max = audio.duration;
-    lineTime.value = audio.currentTime;
-    playTime.textContent = minSecTime(audio.currentTime);
-    nameTrack.textContent = playList[playNum].title;
-    playTimeAll.textContent = playList[playNum].duration;
-    setTimeout(tick, 500);
-}
-, 500);
-
-// setInterval(console.log(minSecTime(audio.currentTime)), 500);
-setInterval(() => {
-    const progressBar = document.querySelector(".progress");
-    progressBar.style.width = audio.currentTime / audio.duration * 100 + "%";
-    document.querySelector(".play-time").textContent = minSecTime( audio.currentTime);
-}, 500);
 
 //lang
 
@@ -452,7 +485,6 @@ const loggleLang = () => {
         item.addEventListener('click', function(event) {
             item.classList.toggle('lang_active');
         })
-        
     });
 }
 
